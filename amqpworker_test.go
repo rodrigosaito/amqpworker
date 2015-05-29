@@ -28,9 +28,6 @@ func connectRabbitMQ(uri string) *amqp.Connection {
 }
 
 func TestWorker(t *testing.T) {
-	conn := connectRabbitMQ(AMQP_URI)
-	defer conn.Close()
-
 	received := make(chan string)
 
 	worker := NewAmqpWorker(AMQP_URI)
@@ -63,9 +60,6 @@ func TestWorker(t *testing.T) {
 }
 
 func TestMultipleConsumers(t *testing.T) {
-	conn := connectRabbitMQ(AMQP_URI)
-	defer conn.Close()
-
 	received1 := make(chan string)
 	received2 := make(chan string)
 
