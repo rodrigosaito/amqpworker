@@ -2,6 +2,7 @@ package amqpworker
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/streadway/amqp"
 )
@@ -55,18 +56,21 @@ func (self *AmqpWorker) startListening(conn *amqp.Connection, c *Consumer) {
 	if err != nil {
 		panic(err)
 	}
+	log.Println("Channel created")
 
 	err = queueDeclare(ch, c.Queue)
 	if err != nil {
 		panic(err)
 	}
+	log.Println("Queue declared")
 
 	msgs, err := ch.Consume(c.Queue.Name, "", true, false, false, false, nil)
 	if err != nil {
 		panic(err)
 	}
+	//self.ready <- true
 
-	self.ready <- true
+	log.Println("Worker started")
 
 	for {
 		select {
