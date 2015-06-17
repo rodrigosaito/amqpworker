@@ -13,9 +13,9 @@ type MyWorker struct {
 	Msg chan string
 }
 
-func (self *MyWorker) Work(msg amqp.Delivery) {
+func (self *MyWorker) Work(msg *Message) {
 	// Sends the received message body to Msg channel
-	self.Msg <- string(msg.Body)
+	self.Msg <- string(msg.Body())
 }
 
 func connectRabbitMQ(uri string) *amqp.Connection {

@@ -2,13 +2,13 @@ package amqpworker
 
 import (
 	"fmt"
-	"log"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
 type Worker interface {
-	Work(msg amqp.Delivery)
+	Work(msg *Message)
 }
 
 func queueDeclare(ch *amqp.Channel, q Queue) error {
@@ -32,9 +32,13 @@ type AmqpWorker struct {
 
 func (self *AmqpWorker) RegisterConsumer(consumer *Consumer) {
 	self.Consumers = append(self.Consumers, consumer)
+
+	self.ready = make(chan bool, len(self.Consumers))
 }
 
 func (self *AmqpWorker) Start() error {
+	log.WithFields(log.Fields{"amqp": self.uri}).Info("Opening amqp connection")
+
 	conn, err := amqp.Dial(self.uri)
 	if err != nil {
 		return err
@@ -56,26 +60,30 @@ func (self *AmqpWorker) startListening(conn *amqp.Connection, c *Consumer) {
 	if err != nil {
 		panic(err)
 	}
-	log.Println("Channel created")
+	log.Debug("Channel created")
 
 	err = queueDeclare(ch, c.Queue)
 	if err != nil {
 		panic(err)
 	}
-	log.Println("Queue declared")
+	log.Debug("Queue declared")
 
 	msgs, err := ch.Consume(c.Queue.Name, "", true, false, false, false, nil)
 	if err != nil {
 		panic(err)
 	}
-	//self.ready <- true
 
-	log.Println("Worker started")
+	self.ready <- true
+
+	log.WithFields(log.Fields{
+		"queue": c.Queue.Name,
+	}).Info("Worker started")
 
 	for {
 		select {
 		case m := <-msgs:
-			c.Worker.Work(m)
+			log.Debug("Message received")
+			c.Worker.Work(&Message{m})
 		case <-self.done:
 			return
 			//default:
@@ -93,7 +101,9 @@ func (self *AmqpWorker) Stop() {
 func (self *AmqpWorker) Ready() {
 	consumers := len(self.Consumers)
 	counter := 0
+	log.Println("consumers", consumers)
 	for _ = range self.ready {
+		log.Println("count")
 		counter++
 		if counter == consumers {
 			return
@@ -103,9 +113,8 @@ func (self *AmqpWorker) Ready() {
 
 func NewAmqpWorker(uri string) *AmqpWorker {
 	return &AmqpWorker{
-		uri:   uri,
-		done:  make(chan bool),
-		ready: make(chan bool),
+		uri:  uri,
+		done: make(chan bool),
 	}
 }
 
@@ -122,4 +131,12 @@ type Queue struct {
 	Exclusive  bool
 	NoWait     bool
 	Args       map[string]string
+}
+
+type Message struct {
+	delivery amqp.Delivery
+}
+
+func (self *Message) Body() []byte {
+	return self.delivery.Body
 }
