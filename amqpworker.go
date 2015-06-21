@@ -1,8 +1,6 @@
 package amqpworker
 
 import (
-	"fmt"
-
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
@@ -39,17 +37,23 @@ func (self *AmqpWorker) RegisterConsumer(consumer *Consumer) {
 func (self *AmqpWorker) Start() error {
 	log.WithFields(log.Fields{"amqp": self.uri}).Info("Opening amqp connection")
 
-	conn, err := amqp.Dial(self.uri)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+	for {
+		conn, err := amqp.Dial(self.uri)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
 
-	for _, c := range self.Consumers {
-		go self.startListening(conn, c)
-	}
+		errorListener := make(chan *amqp.Error)
+		conn.NotifyClose(errorListener)
 
-	<-self.done
+		for _, c := range self.Consumers {
+			go self.startListening(conn, c)
+		}
+
+		<-errorListener
+		log.Info("Connection error detected, reconnecting...")
+	}
 
 	return nil
 }
@@ -73,7 +77,7 @@ func (self *AmqpWorker) startListening(conn *amqp.Connection, c *Consumer) {
 		panic(err)
 	}
 
-	self.ready <- true
+	//self.ready <- true
 
 	log.WithFields(log.Fields{
 		"queue": c.Queue.Name,
@@ -82,16 +86,18 @@ func (self *AmqpWorker) startListening(conn *amqp.Connection, c *Consumer) {
 	for {
 		select {
 		case m := <-msgs:
-			log.Debug("Message received")
+			if m.Acknowledger == nil {
+				// Possible connection error, stop goroutine
+				return
+			}
+
 			c.Worker.Work(&Message{m})
 		case <-self.done:
 			return
 			//default:
-			//	fmt.Println("default")
+			//fmt.Println("default")
 		}
 	}
-
-	fmt.Println("End")
 }
 
 func (self *AmqpWorker) Stop() {
