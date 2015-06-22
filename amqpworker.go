@@ -5,11 +5,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
-type Worker interface {
-	Work(msg *Message)
-}
-
-func queueDeclare(ch *amqp.Channel, q Queue) error {
+func queueDeclare(ch *amqp.Channel, q *Queue) error {
 	_, err := ch.QueueDeclare(
 		q.Name,
 		q.Durable,
@@ -122,27 +118,4 @@ func NewAmqpWorker(uri string) *AmqpWorker {
 		uri:  uri,
 		done: make(chan bool),
 	}
-}
-
-type Consumer struct {
-	Worker      Worker
-	Concurrency int
-	Queue       Queue
-}
-
-type Queue struct {
-	Name       string
-	Durable    bool
-	AutoDelete bool
-	Exclusive  bool
-	NoWait     bool
-	Args       map[string]string
-}
-
-type Message struct {
-	delivery amqp.Delivery
-}
-
-func (self *Message) Body() []byte {
-	return self.delivery.Body
 }
