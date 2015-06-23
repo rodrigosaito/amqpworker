@@ -34,7 +34,6 @@ type Consumer struct {
 	Concurrency int
 	Queue       *Queue
 	stop        chan bool
-	ready       []chan bool
 	wg          sync.WaitGroup
 }
 
@@ -52,12 +51,13 @@ func NewConsumer(worker Worker, concurrency int, queue *Queue) *Consumer {
 
 func (c *Consumer) init() {
 	c.stop = make(chan bool, c.Concurrency)
-	//c.allConsumersReady = make(chan bool, c.Concurrency)
 }
 
 func (c *Consumer) Cancel() {
-	log.Println("Cancel called")
-	c.stop <- true
+	log.Println("Cancelling...")
+	for con := 0; con < c.Concurrency; con++ {
+		c.stop <- true
+	}
 }
 
 func (c *Consumer) Start(conn *amqp.Connection) {
@@ -65,14 +65,10 @@ func (c *Consumer) Start(conn *amqp.Connection) {
 		c.wg.Add(1)
 		go c.Run(conn)
 	}
+}
 
-	go func() {
-		c.wg.Wait()
-
-		for _, ch := range c.ready {
-			ch <- true
-		}
-	}()
+func (c *Consumer) WaitReady() {
+	c.wg.Wait()
 }
 
 func (c *Consumer) Run(conn *amqp.Connection) error {
@@ -109,10 +105,6 @@ func (c *Consumer) Run(conn *amqp.Connection) error {
 			return nil
 		}
 	}
-}
-
-func (c *Consumer) NotifyReady(ready chan bool) {
-	c.ready = append(c.ready, ready)
 }
 
 func (c *Consumer) sendReady() {

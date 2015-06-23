@@ -30,13 +30,10 @@ func TestStartAndConsume(t *testing.T) {
 		queue,
 	)
 
-	ready := make(chan bool)
-	consumer.NotifyReady(ready)
-
 	consumer.Start(conn)
 
 	// Wait until the consumers are ready
-	<-ready
+	consumer.WaitReady()
 
 	pub := &Publisher{
 		Conn:  conn,
@@ -64,13 +61,10 @@ func TestStartWithConcurrency(t *testing.T) {
 		queue,
 	)
 
-	ready := make(chan bool)
-	consumer.NotifyReady(ready)
-
 	consumer.Start(conn)
 
 	// Wait until the consumers are ready
-	<-ready
+	consumer.WaitReady()
 
 	ch, err := conn.Channel()
 	assert.Nil(t, err)
@@ -79,4 +73,6 @@ func TestStartWithConcurrency(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, 10, q.Consumers)
+
+	consumer.Cancel()
 }
