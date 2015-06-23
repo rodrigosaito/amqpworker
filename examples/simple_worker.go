@@ -22,7 +22,7 @@ func main() {
 	worker.RegisterConsumer(&amqpworker.Consumer{
 		Worker:      &MyWorker{},
 		Concurrency: 4,
-		Queue: amqpworker.Queue{
+		Queue: &amqpworker.Queue{
 			Name:       "test_queue",
 			Durable:    false,
 			AutoDelete: true,

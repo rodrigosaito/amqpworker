@@ -81,7 +81,6 @@ func (c *Consumer) Run(conn *amqp.Connection) error {
 	if err = c.Queue.Declare(ch); err != nil {
 		return err
 	}
-	log.Println("Queue declared")
 
 	msgs, err := ch.Consume(c.Queue.Name, "", true, false, false, false, nil)
 	if err != nil {

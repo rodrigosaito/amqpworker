@@ -1,7 +1,8 @@
 package amqpworker
 
 import (
-	log "github.com/Sirupsen/logrus"
+	"log"
+
 	"github.com/streadway/amqp"
 )
 
@@ -16,7 +17,7 @@ func (self *AmqpWorker) RegisterConsumer(consumer *Consumer) {
 }
 
 func (self *AmqpWorker) Start() error {
-	log.WithFields(log.Fields{"amqp": self.uri}).Info("Opening amqp connection")
+	log.Printf("Opening amqp connection uri=%v", self.uri)
 
 	for {
 		conn, err := amqp.Dial(self.uri)
@@ -33,7 +34,7 @@ func (self *AmqpWorker) Start() error {
 		}
 
 		<-errorListener
-		log.Info("Connection error detected, reconnecting...")
+		log.Println("Connection error detected, reconnecting...")
 	}
 
 	return nil
