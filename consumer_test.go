@@ -25,7 +25,9 @@ func TestStartAndConsume(t *testing.T) {
 
 	received := make(chan string)
 	consumer := NewConsumer(
-		&MyWorker{received},
+		func(msg *Message) {
+			received <- string(msg.Body())
+		},
 		1,
 		queue,
 	)
@@ -56,7 +58,7 @@ func TestStartWithConcurrency(t *testing.T) {
 	queue := &Queue{"some_test_queue", false, true, false, false, map[string]string{}}
 
 	consumer := NewConsumer(
-		&MyWorker{},
+		func(msg *Message) {},
 		10,
 		queue,
 	)

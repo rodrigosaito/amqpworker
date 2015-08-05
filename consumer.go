@@ -8,6 +8,8 @@ import (
 	"github.com/streadway/amqp"
 )
 
+type WorkerFunc func(msg *Message)
+
 type Queue struct {
 	Name       string
 	Durable    bool
@@ -30,16 +32,16 @@ func (q *Queue) Declare(ch *amqp.Channel) error {
 }
 
 type Consumer struct {
-	Worker      Worker
+	WorkerFunc  WorkerFunc
 	Concurrency int
 	Queue       *Queue
 	stop        chan bool
 	wg          sync.WaitGroup
 }
 
-func NewConsumer(worker Worker, concurrency int, queue *Queue) *Consumer {
+func NewConsumer(worker WorkerFunc, concurrency int, queue *Queue) *Consumer {
 	c := &Consumer{
-		Worker:      worker,
+		WorkerFunc:  worker,
 		Concurrency: concurrency,
 		Queue:       queue,
 	}
@@ -98,7 +100,7 @@ func (c *Consumer) Run(conn *amqp.Connection) error {
 				return errors.New("Error has happened, possible connection error.")
 			}
 
-			c.Worker.Work(&Message{m})
+			c.WorkerFunc(&Message{m})
 		case <-c.stop:
 			log.Println("Stoping consumer")
 			return nil
