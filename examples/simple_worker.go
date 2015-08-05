@@ -19,7 +19,7 @@ func main() {
 	defer worker.Stop()
 
 	worker.RegisterExchange(&amqpworker.Exchange{
-		Name:       "text_exchange",
+		Name:       "test_exchange",
 		Kind:       "topic",
 		Durable:    false,
 		AutoDelete: true,
@@ -31,12 +31,14 @@ func main() {
 		Queue: &amqpworker.Queue{
 			Name:       "test_queue",
 			Durable:    false,
-			AutoDelete: false,
+			AutoDelete: true,
 			Exclusive:  false,
 			NoWait:     false,
 			Args:       map[string]string{},
 		},
 	})
 
-	worker.Start()
+	if err := worker.Start(); err != nil {
+		log.Fatal(err)
+	}
 }

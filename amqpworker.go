@@ -62,7 +62,7 @@ func (self *AmqpWorker) Start() error {
 			return err
 		}
 
-		errorListener := make(chan *amqp.Error)
+		errorListener := make(chan *amqp.Error, 10)
 		conn.NotifyClose(errorListener)
 
 		for _, c := range self.Consumers {
@@ -79,9 +79,11 @@ func (self *AmqpWorker) Start() error {
 }
 
 func (self *AmqpWorker) Stop() {
-	for _, c := range self.Consumers {
-		c.Cancel()
-	}
+	/*
+		for _, c := range self.Consumers {
+			c.Cancel()
+		}
+	*/
 }
 
 func NewAmqpWorker(uri string) *AmqpWorker {
