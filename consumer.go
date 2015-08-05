@@ -1,7 +1,6 @@
 package amqpworker
 
 import (
-	"errors"
 	"log"
 	"sync"
 
@@ -70,32 +69,34 @@ func (c *Consumer) Cancel() {
 	}
 }
 
-func (c *Consumer) Start(conn *amqp.Connection) {
+func (c *Consumer) Start(conn *amqp.Connection) error {
 	for concurrent := 0; concurrent < c.Concurrency; concurrent++ {
+		ch, err := conn.Channel()
+		if err != nil {
+			return err
+		}
+
+		if err = c.Queue.Declare(ch); err != nil {
+			return err
+		}
+
+		msgs, err := ch.Consume(c.Queue.Name, "", false, false, false, false, nil)
+		if err != nil {
+			return err
+		}
+
 		c.wg.Add(1)
-		go c.Run(conn)
+		go c.Run(msgs)
 	}
+
+	return nil
 }
 
 func (c *Consumer) WaitReady() {
 	c.wg.Wait()
 }
 
-func (c *Consumer) Run(conn *amqp.Connection) error {
-	ch, err := conn.Channel()
-	defer ch.Close()
-	if err != nil {
-		return err
-	}
-
-	if err = c.Queue.Declare(ch); err != nil {
-		return err
-	}
-
-	msgs, err := ch.Consume(c.Queue.Name, "", false, false, false, false, nil)
-	if err != nil {
-		return err
-	}
+func (c *Consumer) Run(msgs <-chan amqp.Delivery) {
 
 	log.Println("Consumer started")
 	c.sendReady()
@@ -105,13 +106,13 @@ func (c *Consumer) Run(conn *amqp.Connection) error {
 		case m := <-msgs:
 			if m.Acknowledger == nil {
 				// Possible connection error, stop
-				return errors.New("Error has happened, possible connection error.")
+				return
 			}
 
 			c.WorkerFunc(&Message{m})
 		case <-c.stop:
 			log.Println("Stoping consumer")
-			return nil
+			return
 		}
 	}
 }

@@ -27,6 +27,7 @@ func (a *AmqpWorker) prepareTopology(conn *amqp.Connection) error {
 	if err != nil {
 		return err
 	}
+	defer ch.Close()
 
 	for _, e := range a.Exchanges {
 		if err := ch.ExchangeDeclare(
@@ -65,7 +66,9 @@ func (self *AmqpWorker) Start() error {
 		conn.NotifyClose(errorListener)
 
 		for _, c := range self.Consumers {
-			c.Start(conn)
+			if err := c.Start(conn); err != nil {
+				return err
+			}
 		}
 
 		<-errorListener

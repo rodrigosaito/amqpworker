@@ -20,6 +20,7 @@ func (w *MyWorker) Work(msg *Message) {
 func TestStartAndConsume(t *testing.T) {
 	conn, err := amqp.Dial(URI)
 	assert.Nil(t, err)
+	defer conn.Close()
 
 	queue := &Queue{"some_test_queue", false, true, false, false, map[string]string{}}
 
@@ -54,6 +55,7 @@ func TestStartAndConsume(t *testing.T) {
 func TestStartWithConcurrency(t *testing.T) {
 	conn, err := amqp.Dial(URI)
 	assert.Nil(t, err)
+	defer conn.Close()
 
 	queue := &Queue{"some_test_queue", false, true, false, false, map[string]string{}}
 
@@ -63,13 +65,15 @@ func TestStartWithConcurrency(t *testing.T) {
 		queue,
 	)
 
-	consumer.Start(conn)
+	err = consumer.Start(conn)
+	assert.Nil(t, err)
 
 	// Wait until the consumers are ready
 	consumer.WaitReady()
 
 	ch, err := conn.Channel()
 	assert.Nil(t, err)
+	defer ch.Close()
 
 	q, err := ch.QueueInspect("some_test_queue")
 	assert.Nil(t, err)
