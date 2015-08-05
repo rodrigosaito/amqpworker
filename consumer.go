@@ -8,6 +8,14 @@ import (
 	"github.com/streadway/amqp"
 )
 
+type Exchange struct {
+	Name       string
+	Kind       string
+	Durable    bool
+	AutoDelete bool
+	Args       map[string]string
+}
+
 type WorkerFunc func(msg *Message)
 
 type Queue struct {

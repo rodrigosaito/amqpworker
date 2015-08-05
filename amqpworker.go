@@ -10,11 +10,39 @@ import (
 type AmqpWorker struct {
 	uri       string
 	done      chan bool
+	Exchanges []*Exchange
 	Consumers []*Consumer
+}
+
+func (a *AmqpWorker) RegisterExchange(exchange *Exchange) {
+	a.Exchanges = append(a.Exchanges, exchange)
 }
 
 func (self *AmqpWorker) RegisterConsumer(consumer *Consumer) {
 	self.Consumers = append(self.Consumers, consumer)
+}
+
+func (a *AmqpWorker) prepareTopology(conn *amqp.Connection) error {
+	ch, err := conn.Channel()
+	if err != nil {
+		return err
+	}
+
+	for _, e := range a.Exchanges {
+		if err := ch.ExchangeDeclare(
+			e.Name,
+			e.Kind,
+			e.Durable,
+			e.AutoDelete,
+			false,
+			false,
+			nil,
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (self *AmqpWorker) Start() error {
@@ -28,6 +56,10 @@ func (self *AmqpWorker) Start() error {
 			continue
 		}
 		defer conn.Close()
+
+		if err := self.prepareTopology(conn); err != nil {
+			return err
+		}
 
 		errorListener := make(chan *amqp.Error)
 		conn.NotifyClose(errorListener)

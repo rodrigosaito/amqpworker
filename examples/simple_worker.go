@@ -17,6 +17,14 @@ func MyWorkerFunc(msg *amqpworker.Message) {
 func main() {
 	worker := amqpworker.NewAmqpWorker(AMQP_URI)
 	defer worker.Stop()
+
+	worker.RegisterExchange(&amqpworker.Exchange{
+		Name:       "text_exchange",
+		Kind:       "topic",
+		Durable:    false,
+		AutoDelete: true,
+	})
+
 	worker.RegisterConsumer(&amqpworker.Consumer{
 		WorkerFunc:  MyWorkerFunc,
 		Concurrency: 4,
