@@ -2,6 +2,7 @@ package amqpworker
 
 import (
 	"log"
+	"time"
 
 	"github.com/streadway/amqp"
 )
@@ -22,7 +23,9 @@ func (self *AmqpWorker) Start() error {
 	for {
 		conn, err := amqp.Dial(self.uri)
 		if err != nil {
-			return err
+			log.Println("Error conecting to rabbitmq, retrying. Message:", err)
+			time.Sleep(1 * time.Second)
+			continue
 		}
 		defer conn.Close()
 
