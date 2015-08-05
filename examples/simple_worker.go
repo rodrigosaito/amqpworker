@@ -13,7 +13,9 @@ type MyWorker struct {
 }
 
 func (self *MyWorker) Work(msg *amqpworker.Message) {
+	log.Println(msg.ConsumerTag())
 	log.Println(string(msg.Body()))
+	msg.Ack()
 }
 
 func main() {

@@ -82,7 +82,7 @@ func (c *Consumer) Run(conn *amqp.Connection) error {
 		return err
 	}
 
-	msgs, err := ch.Consume(c.Queue.Name, "", true, false, false, false, nil)
+	msgs, err := ch.Consume(c.Queue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return err
 	}
