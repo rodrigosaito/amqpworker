@@ -7,43 +7,17 @@ import (
 	"github.com/streadway/amqp"
 )
 
-type Exchange struct {
-	Name       string
-	Kind       string
-	Durable    bool
-	AutoDelete bool
-	Args       map[string]string
-}
-
 type WorkerFunc func(msg *Message)
 
-type Queue struct {
-	Name       string
-	Durable    bool
-	AutoDelete bool
-	Exclusive  bool
-	NoWait     bool
-	Args       map[string]string
-}
-
-func (q *Queue) Declare(ch *amqp.Channel) error {
-	_, err := ch.QueueDeclare(
-		q.Name,
-		q.Durable,
-		q.AutoDelete,
-		q.Exclusive,
-		q.NoWait,
-		nil)
-
-	return err
-}
+type ConfigurerFunc func(admin *AmqpAdmin) error
 
 type Consumer struct {
-	WorkerFunc  WorkerFunc
-	Concurrency int
-	Queue       *Queue
-	stop        chan bool
-	wg          sync.WaitGroup
+	WorkerFunc     WorkerFunc
+	ConfigurerFunc ConfigurerFunc
+	Concurrency    int
+	Queue          *Queue
+	stop           chan bool
+	wg             sync.WaitGroup
 }
 
 func NewConsumer(worker WorkerFunc, concurrency int, queue *Queue) *Consumer {
@@ -76,8 +50,11 @@ func (c *Consumer) Start(conn *amqp.Connection) error {
 			return err
 		}
 
-		if err = c.Queue.Declare(ch); err != nil {
-			return err
+		if c.ConfigurerFunc != nil {
+			admin := &AmqpAdmin{conn}
+			if err := c.ConfigurerFunc(admin); err != nil {
+				return err
+			}
 		}
 
 		msgs, err := ch.Consume(c.Queue.Name, "", false, false, false, false, nil)

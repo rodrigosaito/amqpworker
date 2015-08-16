@@ -22,7 +22,7 @@ func TestStartAndConsume(t *testing.T) {
 	assert.Nil(t, err)
 	defer conn.Close()
 
-	queue := &Queue{"some_test_queue", false, true, false, false, map[string]string{}}
+	queue := &Queue{"some_test_queue", false, true, false, false, map[string]interface{}{}}
 
 	received := make(chan string)
 	consumer := NewConsumer(
@@ -32,6 +32,10 @@ func TestStartAndConsume(t *testing.T) {
 		1,
 		queue,
 	)
+
+	consumer.ConfigurerFunc = func(admin *AmqpAdmin) error {
+		return admin.DeclareQueue(*queue)
+	}
 
 	consumer.Start(conn)
 
@@ -57,13 +61,17 @@ func TestStartWithConcurrency(t *testing.T) {
 	assert.Nil(t, err)
 	defer conn.Close()
 
-	queue := &Queue{"some_test_queue", false, true, false, false, map[string]string{}}
+	queue := &Queue{"some_test_queue", false, true, false, false, map[string]interface{}{}}
 
 	consumer := NewConsumer(
 		func(msg *Message) {},
 		10,
 		queue,
 	)
+
+	consumer.ConfigurerFunc = func(admin *AmqpAdmin) error {
+		return admin.DeclareQueue(*queue)
+	}
 
 	err = consumer.Start(conn)
 	assert.Nil(t, err)
