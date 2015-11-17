@@ -10,6 +10,7 @@ import (
 type AmqpWorker struct {
 	uri       string
 	done      chan bool
+	config    Config
 	Exchanges []*Exchange
 	Consumers []*Consumer
 }
@@ -66,7 +67,7 @@ func (self *AmqpWorker) Start() error {
 		conn.NotifyClose(errorListener)
 
 		for _, c := range self.Consumers {
-			if err := c.Start(conn); err != nil {
+			if err := c.Start(conn, self.config); err != nil {
 				return err
 			}
 		}
@@ -86,9 +87,14 @@ func (self *AmqpWorker) Stop() {
 	*/
 }
 
-func NewAmqpWorker(uri string) *AmqpWorker {
+func NewAmqpWorker(uri string, config Config) *AmqpWorker {
 	return &AmqpWorker{
-		uri:  uri,
-		done: make(chan bool),
+		uri:    uri,
+		done:   make(chan bool),
+		config: config,
 	}
+}
+
+type Config struct {
+	ChannelPrefetch int
 }

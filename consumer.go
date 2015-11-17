@@ -43,12 +43,13 @@ func (c *Consumer) Cancel() {
 	}
 }
 
-func (c *Consumer) Start(conn *amqp.Connection) error {
+func (c *Consumer) Start(conn *amqp.Connection, config Config) error {
 	for concurrent := 0; concurrent < c.Concurrency; concurrent++ {
 		ch, err := conn.Channel()
 		if err != nil {
 			return err
 		}
+		ch.Qos(config.ChannelPrefetch, 0, false)
 
 		if c.ConfigurerFunc != nil {
 			admin := &AmqpAdmin{conn}

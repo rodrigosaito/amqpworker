@@ -11,7 +11,7 @@ import (
 var amqpURL string
 
 func init() {
-	amqpURL = "amqp://guest:guest@localhost:5672"
+	amqpURL = "amqp://admin:admin@localhost:5672"
 
 	if os.Getenv("AMQP_URL") != "" {
 		amqpURL = os.Getenv("AMQP_URL")

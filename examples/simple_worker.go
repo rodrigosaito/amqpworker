@@ -2,15 +2,17 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/rodrigosaito/amqpworker"
 )
 
-const AMQP_URI = "amqp://admin:admin@localhost:5672"
+const AMQP_URI = "amqp://guest:guest@10.0.215.50:5672"
 
 func MyWorkerFunc(msg *amqpworker.Message) {
 	log.Println(msg.ConsumerTag())
 	log.Println(string(msg.Body()))
+	time.Sleep(500 * time.Millisecond)
 	msg.Ack()
 }
 
@@ -29,12 +31,12 @@ func main() {
 		WorkerFunc:  MyWorkerFunc,
 		Concurrency: 4,
 		Queue: &amqpworker.Queue{
-			Name:       "test_queue",
+			Name:       "test_maluco",
 			Durable:    false,
 			AutoDelete: true,
 			Exclusive:  false,
 			NoWait:     false,
-			Args:       map[string]string{},
+			Args:       map[string]interface{}{},
 		},
 	})
 

@@ -37,7 +37,7 @@ func TestStartAndConsume(t *testing.T) {
 		return admin.DeclareQueue(*queue)
 	}
 
-	consumer.Start(conn)
+	consumer.Start(conn, Config{})
 
 	// Wait until the consumers are ready
 	consumer.WaitReady()
@@ -73,7 +73,7 @@ func TestStartWithConcurrency(t *testing.T) {
 		return admin.DeclareQueue(*queue)
 	}
 
-	err = consumer.Start(conn)
+	err = consumer.Start(conn, Config{})
 	assert.Nil(t, err)
 
 	// Wait until the consumers are ready
