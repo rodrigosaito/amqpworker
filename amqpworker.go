@@ -8,43 +8,27 @@ import (
 )
 
 type AmqpWorker struct {
-	uri       string
-	done      chan bool
-	config    Config
-	Exchanges []*Exchange
-	Consumers []*Consumer
+	uri         string
+	done        chan bool
+	config      Config
+	Consumers   []*Consumer
+	PrepareFunc func(admin *AmqpAdmin) error
 }
 
-func (a *AmqpWorker) RegisterExchange(exchange *Exchange) {
-	a.Exchanges = append(a.Exchanges, exchange)
+func NewAmqpWorker(uri string, config Config) *AmqpWorker {
+	return &AmqpWorker{
+		uri:    uri,
+		done:   make(chan bool),
+		config: config,
+	}
 }
 
 func (self *AmqpWorker) RegisterConsumer(consumer *Consumer) {
 	self.Consumers = append(self.Consumers, consumer)
 }
 
-func (a *AmqpWorker) prepareTopology(conn *amqp.Connection) error {
-	ch, err := conn.Channel()
-	if err != nil {
-		return err
-	}
-	defer ch.Close()
-
-	for _, e := range a.Exchanges {
-		if err := ch.ExchangeDeclare(
-			e.Name,
-			e.Kind,
-			e.Durable,
-			e.AutoDelete,
-			false,
-			false,
-			nil,
-		); err != nil {
-			return err
-		}
-	}
-
-	return nil
+func (a *AmqpWorker) prepare(conn *amqp.Connection) error {
+	return a.PrepareFunc(&AmqpAdmin{conn})
 }
 
 func (self *AmqpWorker) Start() error {
@@ -59,7 +43,7 @@ func (self *AmqpWorker) Start() error {
 		}
 		defer conn.Close()
 
-		if err := self.prepareTopology(conn); err != nil {
+		if err := self.prepare(conn); err != nil {
 			return err
 		}
 
@@ -85,14 +69,6 @@ func (self *AmqpWorker) Stop() {
 			c.Cancel()
 		}
 	*/
-}
-
-func NewAmqpWorker(uri string, config Config) *AmqpWorker {
-	return &AmqpWorker{
-		uri:    uri,
-		done:   make(chan bool),
-		config: config,
-	}
 }
 
 type Config struct {
