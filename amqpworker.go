@@ -1,7 +1,6 @@
 package amqpworker
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -42,12 +41,12 @@ func (a *AmqpWorker) prepare(conn *amqp.Connection) error {
 }
 
 func (self *AmqpWorker) Start() error {
-	self.config.Logger.Output(2, fmt.Sprintf("Opening amqp connection uri=%v", self.uri))
+	self.config.Logger.Printf("Opening amqp connection uri=%v", self.uri)
 
 	for {
 		conn, err := amqp.Dial(self.uri)
 		if err != nil {
-			self.config.Logger.Output(2, fmt.Sprintf("Error conecting to rabbitmq, retrying. Message:", err))
+			self.config.Logger.Println("Connection error detected, reconnecting...")
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -67,7 +66,7 @@ func (self *AmqpWorker) Start() error {
 		}
 
 		<-errorListener
-		self.config.Logger.Output(2, fmt.Sprintf("Connection error detected, reconnecting..."))
+		self.config.Logger.Println("Connection error detected, reconnecting...")
 	}
 
 	return nil

@@ -1,13 +1,21 @@
 package amqpworker
 
 import (
+	"log"
+	"os"
 	"testing"
 
 	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 )
 
-const URI = "amqp://admin:admin@localhost:5672"
+const (
+	URI = "amqp://admin:admin@localhost:5672"
+)
+
+var (
+	config = Config{Logger: log.New(os.Stdout, "", log.LstdFlags)}
+)
 
 type MyWorker struct {
 	received chan string
@@ -37,7 +45,7 @@ func TestStartAndConsume(t *testing.T) {
 		return admin.DeclareQueue(*queue)
 	}
 
-	consumer.Start(conn, Config{})
+	consumer.Start(conn, config)
 
 	// Wait until the consumers are ready
 	consumer.WaitReady()
@@ -73,7 +81,7 @@ func TestStartWithConcurrency(t *testing.T) {
 		return admin.DeclareQueue(*queue)
 	}
 
-	err = consumer.Start(conn, Config{})
+	err = consumer.Start(conn, config)
 	assert.Nil(t, err)
 
 	// Wait until the consumers are ready

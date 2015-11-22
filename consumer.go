@@ -76,7 +76,7 @@ func (c *Consumer) WaitReady() {
 
 func (c *Consumer) Run(msgs <-chan amqp.Delivery, config Config) {
 
-	config.Logger.Output(2, "Consumer started")
+	config.Logger.Println("Consumer started")
 	c.sendReady()
 
 	for {
