@@ -64,7 +64,7 @@ func (c *Consumer) Start(conn *amqp.Connection, config Config) error {
 		}
 
 		c.wg.Add(1)
-		go c.Run(msgs)
+		go c.Run(msgs, config)
 	}
 
 	return nil
@@ -74,9 +74,9 @@ func (c *Consumer) WaitReady() {
 	c.wg.Wait()
 }
 
-func (c *Consumer) Run(msgs <-chan amqp.Delivery) {
+func (c *Consumer) Run(msgs <-chan amqp.Delivery, config Config) {
 
-	log.Println("Consumer started")
+	config.Logger.Output(2, "Consumer started")
 	c.sendReady()
 
 	for {

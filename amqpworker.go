@@ -1,7 +1,9 @@
 package amqpworker
 
 import (
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -16,6 +18,10 @@ type AmqpWorker struct {
 }
 
 func NewAmqpWorker(uri string, config Config) *AmqpWorker {
+	if config.Logger == nil {
+		config.Logger = log.New(os.Stdout, "[amqpworker] ", log.LstdFlags)
+	}
+
 	return &AmqpWorker{
 		uri:    uri,
 		done:   make(chan bool),
@@ -28,16 +34,20 @@ func (self *AmqpWorker) RegisterConsumer(consumer *Consumer) {
 }
 
 func (a *AmqpWorker) prepare(conn *amqp.Connection) error {
+	if a.PrepareFunc == nil {
+		return nil
+	}
+
 	return a.PrepareFunc(&AmqpAdmin{conn})
 }
 
 func (self *AmqpWorker) Start() error {
-	log.Printf("Opening amqp connection uri=%v", self.uri)
+	self.config.Logger.Output(2, fmt.Sprintf("Opening amqp connection uri=%v", self.uri))
 
 	for {
 		conn, err := amqp.Dial(self.uri)
 		if err != nil {
-			log.Println("Error conecting to rabbitmq, retrying. Message:", err)
+			self.config.Logger.Output(2, fmt.Sprintf("Error conecting to rabbitmq, retrying. Message:", err))
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -57,7 +67,7 @@ func (self *AmqpWorker) Start() error {
 		}
 
 		<-errorListener
-		log.Println("Connection error detected, reconnecting...")
+		self.config.Logger.Output(2, fmt.Sprintf("Connection error detected, reconnecting..."))
 	}
 
 	return nil
@@ -73,4 +83,5 @@ func (self *AmqpWorker) Stop() {
 
 type Config struct {
 	ChannelPrefetch int
+	Logger          Logger
 }

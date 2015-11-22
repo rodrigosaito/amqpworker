@@ -7,7 +7,7 @@ import (
 	"github.com/rodrigosaito/amqpworker"
 )
 
-const AMQP_URI = "amqp://guest:guest@10.0.215.50:5672"
+const AMQP_URI = "amqp://admin:admin@127.0.0.1:5672"
 
 func MyWorkerFunc(msg *amqpworker.Message) {
 	log.Println(msg.ConsumerTag())
@@ -17,15 +17,8 @@ func MyWorkerFunc(msg *amqpworker.Message) {
 }
 
 func main() {
-	worker := amqpworker.NewAmqpWorker(AMQP_URI)
+	worker := amqpworker.NewAmqpWorker(AMQP_URI, amqpworker.Config{})
 	defer worker.Stop()
-
-	worker.RegisterExchange(&amqpworker.Exchange{
-		Name:       "test_exchange",
-		Kind:       "topic",
-		Durable:    false,
-		AutoDelete: true,
-	})
 
 	worker.RegisterConsumer(&amqpworker.Consumer{
 		WorkerFunc:  MyWorkerFunc,
